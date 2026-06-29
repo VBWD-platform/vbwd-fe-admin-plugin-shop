@@ -3,7 +3,7 @@ import { extensionRegistry } from '../../vue/src/plugins/extensionRegistry';
 
 export const shopAdminPlugin: IPlugin = {
   name: 'shop-admin',
-  version: '26.6',
+  version: '26.6.1',
   description: 'Shop admin — products, categories, orders, stock, warehouses',
 
   install(sdk: IPlatformSDK) {
