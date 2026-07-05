@@ -166,7 +166,13 @@
               data-testid="product-type-select"
               @change="onProductTypeChange"
             >
-              <option value="">
+              <!-- The named `simple_product` type is the default (S116.4). Only when
+                   it is absent (e.g. the type endpoint has not registered it yet) do
+                   we offer a base "none" fallback so the selector stays valid. -->
+              <option
+                v-if="!hasSimpleProductType"
+                value=""
+              >
                 — none (default product) —
               </option>
               <option
@@ -499,16 +505,32 @@ const form = reactive({
 const { taxOptions, loadTaxOptions } = useTaxOptions();
 const taxIds = ref<string[]>([]);
 
-// Product type (S116.2): '' = the simple default product (base fields only).
+// The named default type (S116.4). Every new product defaults to it, and legacy
+// products with a NULL slug are shown as it — no synthetic "none" in the normal case.
+const SIMPLE_PRODUCT_SLUG = 'simple_product';
+
+// Product type (S116.2): '' = the base-only product (fallback when simple_product
+// is not registered); otherwise the selected type's slug.
 const productTypeSlug = ref<string>('');
 const typeFieldValues = ref<Record<string, unknown>>({});
 const activeProductTypes = computed(() => productTypeStore.activeProductTypes);
+const hasSimpleProductType = computed(() =>
+  activeProductTypes.value.some(productType => productType.slug === SIMPLE_PRODUCT_SLUG),
+);
 const selectedProductTypeFields = computed(() => {
   const selected = activeProductTypes.value.find(
     productType => productType.slug === productTypeSlug.value,
   );
   return selected ? selected.product_type_fields : [];
 });
+
+// Map a stored/initial slug to the slug shown in the selector: a missing slug
+// (new product, or a legacy NULL) resolves to simple_product when it is available,
+// otherwise to the base "none" fallback.
+function resolveDisplayTypeSlug(storedSlug: string | null | undefined): string {
+  if (storedSlug) return storedSlug;
+  return hasSimpleProductType.value ? SIMPLE_PRODUCT_SLUG : '';
+}
 
 // User-initiated type switch swaps the visible field set and clears prior values;
 // selecting "none" clears back to the base-only product.
@@ -628,7 +650,7 @@ async function fetchProduct() {
       product_type_slug?: string | null;
       type_field_values?: Record<string, unknown> | null;
     };
-    productTypeSlug.value = typedProduct.product_type_slug || '';
+    productTypeSlug.value = resolveDisplayTypeSlug(typedProduct.product_type_slug);
     typeFieldValues.value = { ...(typedProduct.type_field_values || {}) };
 
     // Load assigned categories
@@ -700,11 +722,14 @@ async function handleSubmit() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadTaxOptions();
-  productTypeStore.fetchActiveProductTypes();
+  // Load types first so the selector default (simple_product) and legacy NULL→
+  // simple_product mapping can be resolved once the list is known.
+  await productTypeStore.fetchActiveProductTypes();
+  productTypeSlug.value = resolveDisplayTypeSlug(null);
   fetchCategories();
-  fetchProduct();
+  await fetchProduct();
   loadWarehouses();
 });
 </script>
