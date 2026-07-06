@@ -209,12 +209,6 @@
               type="checkbox"
             > Active</label>
           </div>
-          <div class="form-group">
-            <label><input
-              v-model="form.is_digital"
-              type="checkbox"
-            > Digital Product</label>
-          </div>
         </div>
         <div class="form-actions">
           <button
@@ -495,7 +489,6 @@ const form = reactive({
   currency: 'EUR',
   description: '',
   is_active: true,
-  is_digital: false,
   weight: '',
   tax_class: 'standard',
   // '' = inherit the global mode; 'netto'/'brutto' = per-product override (S72.4)
@@ -640,7 +633,6 @@ async function fetchProduct() {
     form.currency = product.currency || 'EUR';
     form.description = product.description || '';
     form.is_active = product.is_active;
-    form.is_digital = product.is_digital;
     form.weight = product.weight || '';
     form.tax_class = product.tax_class || 'standard';
     form.price_display_mode = (product as { price_display_mode?: string | null }).price_display_mode || '';

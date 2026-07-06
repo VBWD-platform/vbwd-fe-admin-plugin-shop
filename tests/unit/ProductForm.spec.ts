@@ -34,7 +34,6 @@ const mockProduct = {
   currency: 'EUR',
   description: 'A widget',
   is_active: true,
-  is_digital: false,
   weight: null,
   tax_class: 'standard',
   categories: [],
